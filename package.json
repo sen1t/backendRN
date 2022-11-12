@@ -1,0 +1,13 @@
+{
+    
+        "name":"projetoschedulern",
+        "version": "1.0.0",
+        "description": "",
+        "main":"RnscheduleApplication.java",
+        "scripts": {
+            "teste": "echo \"error: no teste specified\" && exit 1"
+        },
+        "author": "Gabriel siqueira",
+        "license": "none"
+    
+}
