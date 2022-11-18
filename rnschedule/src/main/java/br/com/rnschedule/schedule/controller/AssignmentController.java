@@ -6,15 +6,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.catalina.connector.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.aspectj.EnableSpringConfigured;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,16 +54,14 @@ public class AssignmentController {
 		   
 		   LocalDateTime dtCompromissoFormatter = DateUtils.retornaLocalDateTime(formDTO.getDtAssignment());
 		   
-		   if(dtCompromissoFormatter.isBefore(LocalDateTime.now())) {
-			  
+		   if(DateUtils.dateIsDifferentFromNow(dtCompromissoFormatter)) {
 			   responseMap.put("error", true);
 			   responseMap.put("Date Task", dtCompromissoFormatter);
 			   responseMap.put("Date now", LocalDateTime.now());
 			   responseMap.put("message", "Impossible to create a task dated earlier than current" );
-			   return ResponseEntity.badRequest().body(responseMap);			   
-			   
+			   return ResponseEntity.badRequest().body(responseMap);	
 		   }
-			
+		   		
 		   Assignment assignment = new Assignment();
 		   assignment.setDescription(formDTO.getDescription());
 		   assignment.setDtAssignment( dtCompromissoFormatter);
@@ -88,15 +92,15 @@ public class AssignmentController {
 			   
 			   User user = assignmentService.recoverLoggedUser();
 			   
-			   Collection<AssignmentDTO> ListTask = assignmentRepository.findAllByUser(user);
+			   Collection<AssignmentDTO> listTask = assignmentRepository.findAllByUser(user);
 			   
 			   responseMap.put("error", false);
 			   responseMap.put("message", "Listing tasks for user " + user.getName());
 			   
-			   if(ListTask.isEmpty()) 
+			   if(listTask.isEmpty()) 
 				   responseMap.put("search result", "no tasks on the agenda");
 			   else
-				   responseMap.put("search result", ListTask);
+				   responseMap.put("search result", listTask);
 			   
 			   return ResponseEntity.ok(responseMap);
 			   
@@ -149,8 +153,7 @@ public class AssignmentController {
 			return ResponseEntity.internalServerError().body(responseMap);
 		} 
 	}
-	
-	
+		
 	@DeleteMapping
 	@RequestMapping("delete/{id}")
 	public ResponseEntity deleteTaskById(@PathVariable Integer id) {
@@ -182,6 +185,53 @@ public class AssignmentController {
 			 return ResponseEntity.internalServerError().body(responseMap);
 		 } 	
 	}	
+	
+	@PatchMapping
+	@RequestMapping("update/{id}")
+	public ResponseEntity updateTaskById(@PathVariable Integer id, @RequestBody AssignmentFormDTO formDTO) {
+			 Map<String, Object> responseMap = new HashMap<>();
+		 
+			 try {
+				 Optional<Assignment> Assignment = assignmentRepository.findByIdAndUser(assignmentService.recoverLoggedUser(), id);
+				 LocalDateTime dtCompromissoFormatter = DateUtils.retornaLocalDateTime(formDTO.getDtAssignment());
+				 
+				 if(DateUtils.dateIsDifferentFromNow(dtCompromissoFormatter)) {
+					   responseMap.put("error", true);
+					   responseMap.put("Date Task", dtCompromissoFormatter);
+					   responseMap.put("Date now", LocalDateTime.now());
+					   responseMap.put("message", "unable to schedule a task to the past" );
+					   return ResponseEntity.badRequest().body(responseMap);	
+				  }
+				 
+				  Assignment assignment =  Assignment.get();
+				  assignment.setDescription(formDTO.getDescription());
+				  assignment.setDtAssignment(dtCompromissoFormatter);
+				  assignment.setRecurrent(formDTO.isRecurrent());
+				  assignment.setDtModification(LocalDateTime.now());
+				  
+				  assignmentRepository.saveAndFlush(assignment);
+				  
+				  responseMap.put("error", false);
+				  responseMap.put("Task", new AssignmentDTO(assignment));
+				  responseMap.put("message", "Task successfully update");
+				    
+				 return ResponseEntity.ok(responseMap);
+				 
+			 }catch (NoSuchElementException e) {
+				 responseMap.put("error", true);
+				 responseMap.put("TaskId", id);
+				 responseMap.put("message", "the given task does not exist");
+				 return ResponseEntity.internalServerError().body(responseMap);
+			 }catch (Exception e) {
+				 responseMap.put("error", true);
+				 responseMap.put("cause", e.getMessage());
+				 responseMap.put("message", "Unknow Error");
+				 return ResponseEntity.internalServerError().body(responseMap);
+			 } 	
+		}
+	
+		
+	   
 }
 
 

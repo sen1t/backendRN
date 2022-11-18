@@ -43,4 +43,14 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Integer>
 			+ " and assign.isActive = true")
 	Optional<AssignmentDTO> findByFilter(@Param("user") User user,@Param("id") Integer id);
 	
+	
+	
+	@Query(value = "SELECT * FROM"
+			+ "     tb_assignment a where"
+			+ "     DATEDIFF(a.dt_assignment , LocalTime()) >= -5 AND "
+			+ "     DATEDIFF(a.dt_assignment , LocalTime()) < 2 AND"
+			+ "     a.is_active = 1 and "
+			+ "     a.user_username =:user", nativeQuery = true)
+	Collection<Assignment> findAllTaskAsyncMethod(@Param("user") String user);
+	
 }

@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.ResponseEntity;
 
 public class DateUtils {
 	
@@ -27,4 +28,14 @@ public class DateUtils {
 		return LocalDateTime.parse(data, formatter);
 		
 	}
+	
+	
+	public static boolean dateIsDifferentFromNow(LocalDateTime param) {
+		
+		   if(param.isBefore(LocalDateTime.now()))
+			   return true;
+		   else
+			   return false;
+	}
+	
 }
